@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemoriDSM</title>
+    <link rel="icon" href="./assets/favicon.png" type="image/x-icon">
+    <style>
+        @font-face {
+            font-family: 'Pretendard-Regular';
+            src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        * {
+            font-family: 'Pretendard-Regular';
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0 auto;
+            background-color: #f5f5f5;
+        }
+
+        .welcome {
+            display: flex;
+
+        }
+
+        .class-selector {
+            display: flex;
+            padding: 20px;
+            flex: 1;
+            align-items: center;
+            justify-content: right;
+        }
+
+        .container {
+            padding: 0px 20px 20px 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            cursor: pointer;
+            padding: 20px;
+            color: white;
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            margin: 0 auto;
+            background-color: rgb(24, 24, 24);
+        }
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .content {
+            display: flex;
+            gap: 20px;
+        }
+
+        .box {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .settings {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item {
+            height: 24%;
+        }
+
+        .left-column {
+            flex: 1.2;
+        }
+
+        .right-column {
+            flex: 1;
+        }
+
+        .greeting {
+            font-size: 30px;
+            margin-bottom: 30px;
+        }
+
+        .navigation {
+            justify-content: center;
+            width: 200px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #aaaaaa;
+            padding: 10px;
+            border-radius: 20px;
+            flex-direction: column;
+        }
+
+        .navigation #classInfo {
+            font-size: 40px;
+            cursor: pointer;
+        }
+
+        .vocab-list {
+            margin-bottom: 10px;
+        }
+
+        .vocab-item {
+            background-color: #f8f8f8;
+            padding: 10px;
+            margin-bottom: 5px;
+            border-radius: 5px;
+        }
+
+        .vocab-item #main {
+            text-align: center;
+        }
+
+        .vocab-item #sub {
+            text-align: center;
+            color: rgb(63, 63, 63);
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
+        .button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .button-primary {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .quick-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .quick-action {
+            cursor: pointer;
+            flex-basis: 20%;
+            text-align: center;
+            padding: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                flex-direction: column;
+            }
+
+            .left-column,
+            .right-column {
+                width: 100%;
+            }
+        }
+
+        footer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+
+        footer img {
+            width: 200px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="bar">
+        <header class="header" onclick="window.location.href='./start.html'">
+            <img src="./assets/logo.svg" class="logo"></img>
+            <h1>MemoriDSM</h1>
+
+        </header>
+    </div>
+
+    <div class="container">
+        <div class="welcome">
+            <p class="greeting">오늘도 반가워요, <span id="userName">사용자</span>님<br>좋은 하루 되세요!</p>
+            <div class="class-selector">
+                <div class="navigation" onclick="window.location.href='./start.html'">
+                    <span id="classInfo"><span id="classID">NaN</span></span>
+                    <div>
+                        <span>반을 전환하려면 누르세요</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content">
+            <div class="left-column">
+                <div class="box">
+                    <h2>단어장</h2>
+                    <p id="zps-name-element"></p>
+                    <div class="vocab-list">
+                    </div>
+                </div>
+            </div>
+
+            <div class="right-column">
+                <div class="box settings">
+                    <div class="item">
+                        <h2>빠른 바로가기</h2>
+                        <div class="quick-actions">
+                            <div class="quick-action" id="q-nextWord" style="background-color: #ffca9f;">단어<br>넘기기</div>
+                            <div class="quick-action" style="background-color: #9fc5ff;"
+                                onclick="window.location.href='./voca_edit.html'">암기장<br>설정</div>
+                            <div class="quick-action" style="background-color: #ff9ffa;"
+                                onclick="window.location.href='./class_manage.html'">반<br>수정</div>
+                            <div class="quick-action" style="background-color: #ff9f9f;" onclick="logout()">로그<br>아웃
+                            </div>
+                        </div>
+                    </div>
+                    <div class="item">
+                        <h2>공유 링크</h2>
+                        <div style="background-color: #e0e0e0; padding: 10px; border-radius: 5px;">
+                            <a id="redirectLink" href="#"
+                                style="color: rgb(0, 0, 0); text-decoration: none;">https://memori-dsm.ncloud.sbs/tds?c=<span
+                                    id="classURL"></span></a>
+                        </div>
+                    </div>
+                    <div class="item">
+                        <h2>암기장 공개여부</h2>
+                        <div class="button-group" style="gap: 10px; align-items: center;">
+                            <span id="privacyStatus">NaN</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="privacyToggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="item">
+                        <h2>단어 넘기기</h2>
+                        <div class="button-group" style="gap: 10px;">
+                            <button class="button" style="flex-grow: 1;background-color: #9fc5ff;" id="nextWord">앞으로
+                                넘기기 (+)</button>
+                            <button class="button" style="flex-grow: 1;background-color: #ffaa9f;" id="prevWord">뒤로
+                                넘기기 (-)</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    <footer>
+        HOSTED BY
+        <img src="https://nanu.cc/NANU_Brand_Logo/NANU_CLOUD_MAIN.svg">
+        </div>
+</body>
+
+</html>
+<script src="https://cdn.jsdelivr.net/npm/jwt-decode/build/jwt-decode.min.js"></script><script type="module">
+    import { handleSecurityCheck } from './assets/security.js';
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    const token = getCookie('ACCESS');
+
+    function getUrlParams() {
+        var params = {};
+        window.location.search.replace(/[?&]+([^=&]+)=([^&]*)/gi, function (str, key, value) { params[key] = value; });
+        return params;
+    }
+
+    async function fetchWithRetry(url, options, retryCount = 1) {
+        try {
+            const response = await fetch(url, options);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return await response.json();
+        } catch (error) {
+            if (retryCount > 0) {
+                console.log('Retrying request...');
+                const isAuthenticated = await handleSecurityCheck();
+                if (isAuthenticated) {
+                    options.headers['Auth'] = getCookie('ACCESS');
+                    return fetchWithRetry(url, options, retryCount - 1);
+                }
+            }
+            throw error;
+        }
+    }
+
+    async function fetchVocabularyData() {
+        const CLASS = getUrlParams().class;
+
+        if (!CLASS) {
+            alert('반 정보가 없습니다. 처음부터 시도하여 주십시오.');
+            location.href = "./";
+            return;
+        }
+
+        const apiUrl = `https://jp-osaka-2399.ncloud.sbs/api/readVoca/${CLASS}`;
+        document.getElementById('classID').innerText = CLASS;
+        document.getElementById('classURL').innerText = CLASS;
+        const link = document.getElementById('redirectLink');
+        link.href = `https://memori-dsm.ncloud.sbs/tds?c=${CLASS}`;
+
+        try {
+            const data = await fetchWithRetry(apiUrl, {
+                headers: {
+                    'Auth': token
+                }
+            });
+
+            const vocabListContainer = document.querySelector('.vocab-list');
+            vocabListContainer.innerHTML = ''; // 기존 항목 초기화
+
+            if (data.length > 0) {
+                const zpsNameElement = document.getElementById('zps-name-element');
+
+                const firstSequenceNumber = data[0].sequence_number;
+                const lastSequenceNumber = data[data.length - 1].sequence_number;
+                const zpsName = data[0].zps.zps_name;
+
+                if (zpsNameElement) {
+                    zpsNameElement.textContent = `${zpsName} 단어장, ${firstSequenceNumber} ~ ${lastSequenceNumber}`;
+                }
+            }
+
+            data.forEach(item => {
+                const vocabItem = document.createElement('div');
+                vocabItem.classList.add('vocab-item');
+
+                const mainText = document.createElement('p');
+                mainText.id = 'main';
+                mainText.textContent = item.word_name;
+
+                const subText = document.createElement('p');
+                subText.id = 'sub';
+                subText.textContent = item.word_meaning;
+
+                vocabItem.appendChild(mainText);
+                vocabItem.appendChild(subText);
+                vocabListContainer.appendChild(vocabItem);
+            });
+        } catch (error) {
+            console.error('Error fetching vocabulary data:', error);
+            const vocabListContainer = document.querySelector('.vocab-list');
+            const vocabItem = document.createElement('div');
+            vocabItem.classList.add('vocab-item');
+
+            const mainText = document.createElement('p');
+            mainText.id = 'main';
+            mainText.textContent = 'ERROR!';
+
+            const subText = document.createElement('p');
+            subText.id = 'sub';
+            subText.textContent = '단어장을 불러오는 데 실패했습니다.';
+
+            vocabItem.appendChild(mainText);
+            vocabItem.appendChild(subText);
+            vocabListContainer.appendChild(vocabItem);
+        }
+
+        if (token) {
+            try {
+                const decodedToken = jwt_decode(token);
+                const userEmail = decodedToken.user_email;
+
+                const userNameElement = document.getElementById('userName');
+                if (userNameElement) {
+                    userNameElement.textContent = userEmail;
+                }
+            } catch (error) {
+                console.error('Failed to decode JWT:', error);
+            }
+        } else {
+            console.log('No JWT found in cookies.');
+        }
+    }
+
+    let currentClassData = null;
+
+    async function fetchClassData() {
+        const CLASS = getUrlParams().class;
+        if (!CLASS) {
+            alert('반 정보가 없습니다. 처음부터 시도하여 주십시오.');
+            location.href = "./";
+            return;
+        }
+
+        const apiUrl = `https://jp-osaka-2399.ncloud.sbs/api/classes/${CLASS}`;
+        try {
+            currentClassData = await fetchWithRetry(apiUrl, {
+                headers: {
+                    'Auth': token
+                }
+            });
+            updateUI();
+        } catch (error) {
+            console.error('Error fetching class data:', error);
+        }
+    }
+
+    function updateUI() {
+        const privacyToggle = document.getElementById('privacyToggle');
+        const privacyStatus = document.getElementById('privacyStatus');
+        privacyToggle.checked = currentClassData.is_public === 1;
+        privacyStatus.textContent = currentClassData.is_public === 1 ? '단어장은 공개 상태에요' : '단어장은 비공개 상태에요';
+    }
+
+    async function togglePrivacy() {
+        const CLASS = getUrlParams().class;
+        const apiUrl = `https://jp-osaka-2399.ncloud.sbs/api/classes/privacy/${CLASS}`;
+        try {
+            currentClassData = await fetchWithRetry(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Auth': token
+                }
+            });
+            location.reload();
+        } catch (error) {
+            console.error('Error toggling privacy:', error);
+            alert('개인정보 설정을 변경하는 데 실패했습니다. 다시 시도해 주세요.');
+        }
+    }
+
+    async function changeWord(direction) {
+        const CLASS = getUrlParams().class;
+        const apiUrl = `https://jp-osaka-2399.ncloud.sbs/api/classes/${direction === 'next' ? 'zps_up' : 'zps_down'}/${CLASS}`;
+        try {
+            currentClassData = await fetchWithRetry(apiUrl, {
+                method: 'POST',
+                headers: {
+                    'Auth': token
+                }
+            });
+            alert('단어장을 넘겼어요!');
+            location.reload();
+        } catch (error) {
+            console.error('Error changing word:', error);
+            alert('단어장을 넘기는 데 실패했습니다. 다시 시도해 주세요.');
+        }
+    }
+
+    window.onload = async function () {
+        const isAuthenticated = await handleSecurityCheck();
+        if (isAuthenticated) {
+            await fetchVocabularyData();
+            await fetchClassData();
+
+            document.getElementById('privacyToggle').addEventListener('change', togglePrivacy);
+            document.getElementById('q-nextWord').addEventListener('click', () => changeWord('next'));
+            document.getElementById('nextWord').addEventListener('click', () => changeWord('next'));
+            document.getElementById('prevWord').addEventListener('click', () => changeWord('prev'));
+        }
+    };
+
+    function logout() {
+        document.cookie.split(';').forEach(cookie => {
+            const [name] = cookie.split('=');
+            document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+        });
+        localStorage.clear();
+        window.location.href = 'index.html';
+    }
+
+    // Expose logout function to global scope
+    window.logout = logout;
+    </script>

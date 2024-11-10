@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemoriDSM - 반 수정</title>
+    <link rel="icon" href="./assets/favicon.png" type="image/x-icon">
+    <style>
+        @font-face {
+            font-family: 'Pretendard-Regular';
+            src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        * {
+            font-family: 'Pretendard-Regular';
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            display: flex;
+            gap: 20px;
+        }
+
+        .header {
+            cursor: pointer;
+            padding: 20px;
+            color: white;
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            margin: 0 auto;
+            background-color: rgb(24, 24, 24);
+            margin-bottom: 20px;
+        }
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .left-column,
+        .right-column {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .left-column {
+            flex: 1;
+        }
+
+        .right-column {
+            flex: 2;
+        }
+
+        .add-class-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            text-align: center;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        .class-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .class-item {
+            background-color: #e0e0e0;
+            margin-bottom: 5px;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .class-item.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .settings-title {
+            margin-top: 0;
+        }
+
+        .setting-row {
+            margin-bottom: 20px;
+        }
+
+        .setting-label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .setting-input {
+            width: 100%;
+            padding: 5px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+        }
+
+        .weekday-selector {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .weekday {
+            padding: 10px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .weekday.active {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .action-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .save-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .delete-button {
+            background-color: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header" onclick="window.location.href='./start.html'">
+        <img src="./assets/logo.svg" class="logo">
+        <h1>MemoriDSM</h1>
+    </header>
+
+    <div class="container">
+        <div class="left-column">
+            <h2>반 수정</h2>
+            <button class="add-class-button">반 추가하기</button>
+            <ul class="class-list">
+            </ul>
+        </div>
+
+        <div class="right-column">
+            <h2 class="settings-title">1반 설정</h2>
+            <div class="setting-row">
+                <label class="setting-label">시험당 암기목록 갯수</label>
+                <input type="number" class="setting-input" id="word-count" value="8">
+            </div>
+            <div class="setting-row">
+                <label class="setting-label">단어장 선택</label>
+                <select id="zps-selector" class="setting-input">
+                </select>
+            </div>
+            <div class="action-buttons">
+                <button class="action-button save-button">저장하기</button>
+                <button class="action-button delete-button">반 삭제하기</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        const getCookie = (name) => {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        };
+
+        const API_BASE_URL = 'http://localhost:4000/api'; // 엔드포인트 기본 URL
+
+        import { handleSecurityCheck } from './assets/security.js';
+
+        window.onload = async function () {
+            const isAuthenticated = await handleSecurityCheck();
+            if (isAuthenticated) {
+                loadZPSOptions();
+                loadClasses();
+            }
+        };
+
+        // ZPS 목록 불러오기
+        async function loadZPSOptions() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/zps`, {
+                    method: 'GET',
+                    headers: {
+                        'Auth': getCookie('ACCESS')
+                    }
+                });
+                const zpsList = await response.json();
+                const zpsSelector = document.getElementById('zps-selector');
+
+                zpsList.forEach(zps => {
+                    const option = document.createElement('option');
+                    option.value = zps.zps_id;
+                    option.textContent = zps.zps_name;
+                    zpsSelector.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading ZPS options:', error);
+            }
+        }
+
+        // 반 목록 불러오기
+        async function loadClasses() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/classes`, {
+                    method: 'GET',
+                    headers: {
+                        'Auth': getCookie('ACCESS')
+                    }
+                });
+                const classes = await response.json();
+                const classList = document.querySelector('.class-list');
+                classList.innerHTML = ''; // 기존 항목 삭제
+
+                classes.forEach(classItem => {
+                    const li = document.createElement('li');
+                    li.className = 'class-item';
+                    li.textContent = classItem.class_name;
+                    li.onclick = () => selectClass(classItem);
+                    classList.appendChild(li);
+                });
+            } catch (error) {
+                console.error('Error loading classes:', error);
+            }
+        }
+
+        function selectClass(classItem) {
+            document.querySelector('.settings-title').textContent = `${classItem.class_name} 설정`;
+            document.getElementById('word-count').value = classItem.change_amount || 8;
+            document.getElementById('zps-selector').value = classItem.selected_zps?.zps_id || '';
+        }
+
+        // 반 저장 기능
+        document.querySelector('.save-button').addEventListener('click', async () => {
+            const className = document.querySelector('.settings-title').textContent.replace(' 설정', '');
+            const wordCount = document.getElementById('word-count').value;
+            const selectedZPS = document.getElementById('zps-selector').value;
+
+            try {
+                await fetch(`${API_BASE_URL}/classes/${className}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Auth': getCookie('ACCESS')
+                    },
+                    body: JSON.stringify({
+                        change_amount: wordCount,
+                        selected_zps_id: selectedZPS
+                    })
+                });
+                alert('반 설정이 저장되었습니다.');
+            } catch (error) {
+                console.error('Error saving class settings:', error);
+                alert('반 설정 저장에 실패했습니다.');
+            }
+        });
+
+        // 반 삭제 기능
+        document.querySelector('.delete-button').addEventListener('click', async () => {
+            const className = document.querySelector('.settings-title').textContent.replace(' 설정', '');
+
+            try {
+                await fetch(`${API_BASE_URL}/classes/${className}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Auth': getCookie('ACCESS')
+                    }
+                });
+                alert('반이 삭제되었습니다.');
+                window.location.href = './start.html'
+            } catch (error) {
+                console.error('Error deleting class:', error);
+                alert('반 삭제에 실패했습니다.');
+            }
+        });
+
+        // 반 추가 기능
+        document.querySelector('.add-class-button').addEventListener('click', async () => {
+            const newClassName = prompt('새로운 반의 이름을 입력하세요:');
+            if (!newClassName) return; // 입력 취소 시 종료
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/classes`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Auth': getCookie('ACCESS')
+                    },
+                    body: JSON.stringify({
+                        class_name: newClassName,
+                        change_amount: 8,
+                        selected_zps_id: document.getElementById('zps-selector').value
+                    })
+                });
+
+                if (response.ok) {
+                    alert('새로운 반이 추가되었습니다.');
+                    loadClasses(); // 반 목록을 다시 불러오기
+                } else {
+                    const errorData = await response.json();
+                    alert(`반 추가 실패: ${errorData.message}`);
+                }
+            } catch (error) {
+                console.error('Error adding new class:', error);
+                alert('반 추가에 실패했습니다.');
+            }
+        });
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemoriDSM 단어장</title>
+    <link rel="icon" href="./assets/favicon.png" type="image/x-icon">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap');
+
+        @font-face {
+            font-family: 'Pretendard-Regular';
+            src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+            font-weight: 400;
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #fff;
+            margin: 0;
+            padding: 0;
+            color: #3c3c3c;
+        }
+
+        #container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+
+        .page-header {
+            font-family: 'Pretendard-Regular';
+            background-color: #58cc02;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .page-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .notice-banner {
+            background-color: #e4e4e4;
+            border: 2px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .notice-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1cb0f6;
+            margin-bottom: 10px;
+            font-family: 'Pretendard-Regular';
+        }
+
+        .notice-description {
+            font-family: 'Pretendard-Regular';
+            font-size: 18px;
+            color: #777;
+        }
+
+        #voca-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .voca-item {
+            background-color: #fff;
+            border: 2px solid #e5e5e5;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .voca-item:hover {
+            border-color: #1cb0f6;
+            box-shadow: 0 0 10px rgba(28, 176, 246, 0.3);
+        }
+
+        .word-name {
+            font-size: 24px;
+            font-weight: 700;
+            color: #3c3c3c;
+            margin-bottom: 10px;
+        }
+
+        .word-meaning {
+            font-family: 'Pretendard-Regular';
+            font-size: 18px;
+            color: #777;
+        }
+
+        @media (max-width: 600px) {
+            #voca-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        #info {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container">
+        <header class="page-header">
+            <h1 class="page-title"><span id="class-title"></span> 단어장</h1>
+        </header>
+
+        <div class="notice-banner">
+            <div class="notice-title">공지사항</div>
+            <div class="notice-description">다들 열심히 공부하세요~~</div>
+        </div>
+
+        <div id="voca-container"></div>
+        <div id="info">memoriDSM Client</div>
+    </div>
+    <script>
+        function getUrlParams() {
+            var params = {};
+            window.location.search.replace(/[?&]+([^=&]+)=([^&]*)/gi, function (str, key, value) { params[key] = value; });
+            return params;
+        }
+        document.addEventListener('DOMContentLoaded', () => {
+            const CLASS = getUrlParams().Q;
+            const apiUrl = `http://localhost:4000/api/readVoca/${CLASS}`;
+
+            document.getElementById('class-title').textContent = decodeURIComponent(CLASS);
+
+            fetch(apiUrl)
+                .then(response => response.json())
+                .then(data => {
+                    const vocaContainer = document.getElementById('voca-container');
+                    vocaContainer.innerHTML = '';
+
+                    data.forEach(item => {
+                        const vocaItem = document.createElement('div');
+                        vocaItem.classList.add('voca-item');
+
+                        const wordName = document.createElement('div');
+                        wordName.classList.add('word-name');
+                        wordName.textContent = item.word_name;
+
+                        const wordMeaning = document.createElement('div');
+                        wordMeaning.classList.add('word-meaning');
+                        wordMeaning.textContent = item.word_meaning;
+
+                        vocaItem.appendChild(wordName);
+                        vocaItem.appendChild(wordMeaning);
+
+                        vocaContainer.appendChild(vocaItem);
+                    });
+                })
+                .catch(error => {
+                    alert('단어장을 표시할 수 없어요. 단어장이 없거나 비공개 상태일 수 있어요');
+                });
+        });
+    </script>
+</body>
+
+</html>

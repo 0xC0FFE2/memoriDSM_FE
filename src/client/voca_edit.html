@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemoriDSM - 암기장 수정</title>
+    <link rel="icon" href="./assets/favicon.png" type="image/x-icon">
+    <style>
+        @font-face {
+            font-family: 'Pretendard-Regular';
+            src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+            font-weight: 400;
+            font-style: normal;
+        }
+
+        * {
+            font-family: 'Pretendard-Regular';
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            gap: 20px;
+        }
+
+        .header {
+            cursor: pointer;
+            padding: 20px;
+            color: white;
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            background-color: rgb(24, 24, 24);
+        }
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .left-column,
+        .right-column {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .left-column {
+            flex: 1;
+        }
+
+        .right-column {
+            flex: 2;
+        }
+
+        .vocabulary-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .vocabulary-item {
+            background-color: #e0e0e0;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .vocabulary-item.selected {
+            background-color: #ccc;
+        }
+
+        .delete-word {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+            border-radius: 5px;
+        }
+
+        .vocabulary-table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #333;
+            color: white;
+        }
+
+        .vocabulary-table th,
+        .vocabulary-table td {
+            border: 1px solid #555;
+            padding: 10px;
+            text-align: left;
+        }
+
+        .vocabulary-table th {
+            background-color: #222;
+        }
+
+        .right-column {
+            display: none;
+        }
+
+        .add-row,
+        .add-voca-row,
+        .add-vocabulary,
+        .paste-data,
+        .add-zps {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px;
+            width: 100%;
+            text-align: center;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 10px;
+        }
+
+        .action-button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .save-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .delete-button {
+            background-color: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <header class="header" onclick="window.location.href='./start.html'">
+        <img src="./assets/logo.svg" class="logo"></img>
+        <h1>MemoriDSM</h1>
+    </header>
+    <div class="container">
+        <div class="left-column">
+            <h2>암기장 수정</h2>
+            <button class="add-zps">암기장 추가</button>
+            <ul class="vocabulary-list">
+            </ul>
+        </div>
+
+        <div class="right-column">
+            <h2>암기장 내용</h2>
+            <button class="paste-data">붙여넣기</button>
+            <table class="vocabulary-table">
+                <thead>
+                    <tr>
+                        <th>단어/문장 명</th>
+                        <th>뜻 명</th>
+                        <th>액션</th>
+                    </tr>
+                </thead>
+                <tbody id="vocabulary-body">
+                </tbody>
+            </table>
+            <button class="add-voca-row">+</button>
+            <div class="action-buttons">
+                <button class="action-button save-button">저장하기</button>
+                <button class="action-button delete-button">삭제하기</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        const API_BASE_URL = 'http://localhost:4000/api';
+        const ZPS_ENDPOINT = `${API_BASE_URL}/zps`;
+        const VOCAS_ENDPOINT = `${API_BASE_URL}/vocas`;
+
+        let currentZps = null;
+
+        const vocabularyList = document.querySelector('.vocabulary-list');
+        const vocabularyTable = document.querySelector('.vocabulary-table tbody');
+        const addZpsButton = document.querySelector('.add-zps');
+        const pasteDataButton = document.querySelector('.paste-data');
+        const addVocaRowButton = document.querySelector('.add-voca-row');
+        const saveButton = document.querySelector('.save-button');
+        const deleteButton = document.querySelector('.delete-button');
+        const rightColumn = document.querySelector('.right-column');
+
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+        }
+
+        const token = getCookie('ACCESS');
+
+        async function fetchZpsList() {
+            try {
+                const response = await fetch(ZPS_ENDPOINT, {
+                    headers: { 'Auth': token }
+                });
+                const zpsList = await response.json();
+                renderZpsList(zpsList);
+            } catch (error) {
+                console.error('암기장 목록 가져오기 오류:', error);
+            }
+        }
+
+        function renderZpsList(zpsList) {
+            vocabularyList.innerHTML = '';
+            zpsList.forEach(zps => {
+                const li = document.createElement('li');
+                li.textContent = zps.zps_name;
+                li.classList.add('vocabulary-item');
+                li.dataset.id = zps.zps_id;
+                li.addEventListener('click', () => loadVocabulary(zps.zps_id));
+                vocabularyList.appendChild(li);
+            });
+        }
+
+
+
+        async function loadVocabulary(zpsId) {
+            currentZps = zpsId;
+            try {
+                const response = await fetch(`${VOCAS_ENDPOINT}/${zpsId}`, {
+                    headers: { 'Auth': token }
+                });
+                const vocabularyItems = await response.json();
+                displayVocabulary(vocabularyItems);
+            } catch (error) {
+                console.error('암기장 내용 가져오기 오류:', error);
+            }
+        }
+
+        function displayVocabulary(vocabularyItems) {
+            rightColumn.style.display = 'block';
+            vocabularyTable.innerHTML = '';
+            vocabularyItems.forEach(item => {
+                const row = createVocabularyRow(item);
+                vocabularyTable.appendChild(row);
+            });
+        }
+
+        function createVocabularyRow(item) {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td contenteditable="true">${item.word_name}</td>
+                <td contenteditable="true">${item.word_meaning}</td>
+                <td>
+                    <button class="delete-word">Delete</button>
+                </td>
+            `;
+            row.dataset.id = item.voca_id;
+            row.querySelector('.delete-word').addEventListener('click', () => deleteVocaRow(item.voca_id));
+            return row;
+        }
+
+        function addNewVocaRow() {
+            const newItem = { voca_id: Date.now().toString(), word_name: '', word_meaning: '', zps_id: currentZps };
+            const row = createVocabularyRow(newItem);
+            vocabularyTable.appendChild(row);
+        }
+
+        async function deleteVocaRow(vocaId) {
+            try {
+                const response = await fetch(`${VOCAS_ENDPOINT}/${vocaId}`, {
+                    method: 'DELETE',
+                    headers: { 'Auth': token }
+                });
+                if (response.ok) {
+                    document.querySelector(`tr[data-id="${vocaId}"]`).remove();
+                } else {
+                    console.error('단어 삭제에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('단어 삭제 중 오류 발생:', error);
+            }
+        }
+
+        async function deleteZps(zpsId) {
+            const userConfirm = confirm('정말로 단어장을 삭제하시겠습니까?');
+            if (!userConfirm) {
+                return;
+            }
+            try {
+                const response = await fetch(`${ZPS_ENDPOINT}/${zpsId}`, {
+                    method: 'DELETE',
+                    headers: { 'Auth': token }
+                });
+                if (response.ok) {
+                    document.querySelector(`.vocabulary-item[data-id="${zpsId}"]`).remove();
+                } else {
+                    alert('암기장을 삭제할 수 없습니다. 이 암기장을 사용하는 반(Class)가 있을 수 있습니다.');
+                    console.error('암기장 삭제에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('암기장 삭제 중 오류 발생:', error);
+            }
+        }
+
+        async function pasteData() {
+            const pastedData = prompt('단어와 뜻을 입력하세요 (형식: ["단어", "뜻"], ["단어", "뜻"] ...):');
+
+            if (pastedData && currentZps) {
+                try {
+                    const dataArray = JSON.parse(pastedData);
+
+                    if (Array.isArray(dataArray)) {
+                        const newItems = [];
+                        for (const [word, meaning] of dataArray) {
+                            if (word && meaning) {
+                                const newItem = {
+                                    word_name: word.trim(),
+                                    word_meaning: meaning.trim(),
+                                    zps_id: currentZps
+                                };
+                                newItems.push(newItem);
+                            }
+                        }
+
+                        for (const item of newItems) {
+                            try {
+                                const response = await fetch(VOCAS_ENDPOINT, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', 'Auth': token },
+                                    body: JSON.stringify(item),
+                                });
+                                if (!response.ok) {
+                                    throw new Error('서버 응답 오류');
+                                }
+                                const savedItem = await response.json();
+                                const newRow = createVocabularyRow(savedItem);
+                                vocabularyTable.appendChild(newRow);
+                            } catch (error) {
+                                console.error('항목 저장 중 오류:', error);
+                            }
+                        }
+
+                        alert('새로운 항목이 추가되었습니다.');
+                    } else {
+                        alert('잘못된 형식입니다. 배열 형식으로 입력해주세요.');
+                    }
+                } catch (error) {
+                    console.error('입력 파싱 오류:', error);
+                    alert('입력 형식이 올바르지 않습니다. 배열 형식으로 입력하세요.');
+                }
+            } else if (!currentZps) {
+                alert('먼저 암기장을 선택해주세요.');
+            }
+            location.reload();
+        }
+
+        async function saveVocabularyChanges() {
+            if (!currentZps) {
+                alert('암기장이 선택되지 않았습니다.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${VOCAS_ENDPOINT}/${currentZps}`, {
+                    headers: { 'Auth': token }
+                });
+                const serverVocabularyItems = await response.json();
+                const rows = Array.from(vocabularyTable.querySelectorAll('tr'));
+                const userVocabularyItems = rows.map((row, index) => ({
+                    voca_id: row.dataset.id,
+                    word_name: row.cells[0].textContent.trim(),
+                    word_meaning: row.cells[1].textContent.trim(),
+                    zps_id: currentZps,
+                    sequence_number: index + 1
+                }));
+
+                for (const userItem of userVocabularyItems) {
+                    const matchingServerItem = serverVocabularyItems.find(serverItem => serverItem.voca_id === userItem.voca_id);
+
+                    if (matchingServerItem) {
+                        if (
+                            matchingServerItem.word_name !== userItem.word_name ||
+                            matchingServerItem.word_meaning !== userItem.word_meaning ||
+                            matchingServerItem.sequence_number !== userItem.sequence_number
+                        ) {
+                            await fetch(`${VOCAS_ENDPOINT}/${userItem.voca_id}`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json', 'Auth': token },
+                                body: JSON.stringify(userItem),
+                            });
+                        }
+                    } else {
+                        await fetch(VOCAS_ENDPOINT, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Auth': token },
+                            body: JSON.stringify(userItem),
+                        });
+                    }
+                }
+
+                alert('변경 사항이 저장되었습니다!');
+                loadVocabulary(currentZps);
+            } catch (error) {
+                console.error('변경 사항 저장 오류:', error);
+                alert('변경 사항 저장 중 오류가 발생했습니다. 다시 시도해 주세요.');
+            }
+        }
+
+async function addNewZps() {
+    const zpsName = prompt('새 암기장의 이름을 입력하세요:');
+    if (zpsName) {
+        try {
+            const response = await fetch(ZPS_ENDPOINT, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Auth': token
+                },
+                body: JSON.stringify({ zps_name: zpsName })
+            });
+            if (response.ok) {
+                const newZps = await response.json();
+                const li = document.createElement('li');
+                li.textContent = newZps.zps_name;
+                li.classList.add('vocabulary-item');
+                li.dataset.id = newZps.zps_id;
+                li.addEventListener('click', () => loadVocabulary(newZps.zps_id));
+                vocabularyList.appendChild(li);
+                alert('새 암기장이 추가되었습니다.');
+            } else {
+                throw new Error('서버 응답 오류');
+            }
+        } catch (error) {
+            console.error('암기장 추가 오류:', error);
+            alert('암기장 추가 중 오류가 발생했습니다.');
+        }
+    }
+}
+
+addZpsButton.addEventListener('click', addNewZps);
+
+        import { handleSecurityCheck } from './assets/security.js';
+
+        window.onload = async function () {
+            const isAuthenticated = await handleSecurityCheck();
+            if (isAuthenticated) {
+                pasteDataButton.addEventListener('click', pasteData);
+                addVocaRowButton.addEventListener('click', addNewVocaRow);
+                deleteButton.addEventListener('click', () => deleteZps(currentZps));
+                saveButton.addEventListener('click', saveVocabularyChanges);
+                fetchZpsList();
+            }
+        };
+    </script>
+
+</body>
+
+</html>
